@@ -1,0 +1,17 @@
+{
+  "name": "@paplet/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/schemas.ts",
+  "types": "src/schemas.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  },
+  "dependencies": {
+    "zod": "^4.6.6"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}
