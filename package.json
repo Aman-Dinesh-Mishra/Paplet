@@ -1,18 +1,30 @@
 {
-  "name": "paplet",
-  "private": true,
+  "name": "paplet-monorepo",
   "version": "0.1.0",
-  "workspaces": ["apps/*", "packages/*"],
-  "engines": { "node": ">=20" },
+  "private": true,
+  "workspaces": [
+    "apps/api",
+    "apps/web",
+    "packages/shared"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev:api": "npm run dev -w @paplet/api",
     "dev:web": "npm run dev -w @paplet/web",
-    "build": "npm run build --workspaces --if-present",
+    "build:shared": "npm run build --workspace=packages/shared",
+    "lint": "eslint \"apps/*/src/**/*.{ts,tsx}\" \"packages/*/src/**/*.ts\"",
     "typecheck": "npm run typecheck --workspaces --if-present",
+    "build": "npm run build:shared && npm run build -w @paplet/api && npm run build -w @paplet/web",
     "eval": "tsx eval/run-eval.ts"
   },
   "devDependencies": {
-    "tsx": "^4.19.0",
-    "typescript": "^5.6.0"
+    "@typescript-eslint/eslint-plugin": "^8.72.2",
+    "@typescript-eslint/parser": "^8.72.2",
+    "eslint": "^8.57.0",
+    "prettier": "^3.2.5",
+    "typescript": "^5.4.2",
+    "tsx": "^4.19.0"
   }
 }

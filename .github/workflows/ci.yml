@@ -1,17 +1,33 @@
-name: CI
+name: CI Pipeline
+
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
+    branches: [main, develop]
+
 jobs:
-  build:
+  validate:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: npm
-      - run: npm ci
-      - run: npm run typecheck
-      - run: npm run build
+          cache: "npm"
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Type Check
+        run: npm run typecheck
+
+      - name: Lint Check
+        run: npm run lint
+
+      - name: Build Project
+        run: npm run build
