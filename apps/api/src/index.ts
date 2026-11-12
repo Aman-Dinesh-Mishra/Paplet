@@ -1,13 +1,31 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-
+import { pool } from "./db/pool.js";
 const app = express();
-app.use(cors());
+app.use(
+  cors({
+    origin: process.env.ALLOWED_ORIGIN ?? "http://localhost:5173",
+  }),
+);
 app.use(express.json());
 
-app.get("/health", (_req, res) => {
-  res.json({ status: "ok", service: "paplet-api" });
+app.get("/health", async (_req, res) => {
+  try {
+    await pool.query("SELECT 1");
+
+    res.json({
+      status: "ok",
+      db: "connected",
+      time: new Date().toISOString(),
+    });
+  } catch {
+    res.status(503).json({
+      status: "error",
+      db: "disconnected",
+      time: new Date().toISOString(),
+    });
+  }
 });
 
 const port = Number(process.env.PORT ?? 4000);
