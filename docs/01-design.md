@@ -2,80 +2,160 @@
 
 ## 1. Architecture Overview
 
+Paplet follows a modular architecture with a React frontend, Express API, PostgreSQL vector storage, and external LLM integration.
+
 ```text
-Browser (React + TS)
-        │
-   REST (JSON)
-        ▼
-Express + TS API
-  ├── Ingestion: Upload PDF ──> Parse Text/Page ──> Chunk ──> Embed ──> Store DB
-  └── Ask: Embed Query ──> Vector Search (top-k) ──> Prompt LLM ──> Validate Citations
-        │
-        ▼
-Postgres + pgvector (Supabase) ──> LLM API (Groq) / Local Embedding Model
+React + TypeScript
+        |
+     REST API
+        |
+Express + TypeScript
+   |                |
+   v                v
+Document          Question
+Ingestion         Answering
+   |                |
+   v                v
+Extract           Embed Query
+   |                |
+Chunk              v
+   |             Vector Search
+Embed              |
+   |                v
+   v             Context + LLM
+PostgreSQL          |
++ pgvector          v
+                Citation Validation
 ```
+
+**Technology responsibilities:**
+
+- **Frontend:** React and TypeScript for document uploads and research-paper interaction.
+- **API:** Express and TypeScript for ingestion, retrieval, and request orchestration.
+- **Database:** PostgreSQL with pgvector for document metadata, text chunks, and vector embeddings.
+- **Embedding model:** `all-MiniLM-L6-v2` for 384-dimensional text embeddings.
+- **LLM:** Groq API for answer generation.
+
+The ingestion pipeline and embedding persistence are implemented. Semantic retrieval and answer generation are subsequent implementation stages.
 
 ## 2. Data Model & Database Schema
 
-We use PostgreSQL hosted on Supabase with the `pgvector` extension enabled. This allows us to combine relational document tracking with high-dimensional vector similarity search in a single database transaction.
+Paplet uses PostgreSQL hosted on Supabase with the `pgvector` extension. Relational metadata and vector embeddings are stored in the same database.
 
 ### 2.1 Tables
 
 #### `documents`
 
-Tracks uploaded PDF file metadata and processing lifecycle states.
+Stores uploaded PDF metadata and processing status.
 
-| Column | Type | Constraints / Description |
-| :--- | :--- | :--- |
-| `id` | UUID | Primary Key, `DEFAULT gen_random_uuid()` |
-| `title` | TEXT | Not Null, extracted title or filename |
-| `file_path` | TEXT | Not Null, storage identifier |
-| `status` | TEXT | `'processing'`, `'ready'`, or `'failed'` |
-| `error_message` | TEXT | Nullable, stores failure context |
-| `created_at` | TIMESTAMPTZ | Default `NOW()` |
+| Column          | Type        | Description                              |
+| --------------- | ----------- | ---------------------------------------- |
+| `id`            | UUID        | Primary key, generated automatically     |
+| `title`         | TEXT        | Original PDF filename                    |
+| `file_path`     | TEXT        | Local storage path or storage identifier |
+| `status`        | TEXT        | `processing`, `ready`, or `failed`       |
+| `error_message` | TEXT        | Nullable processing failure details      |
+| `created_at`    | TIMESTAMPTZ | Creation timestamp                       |
 
 #### `chunks`
 
-Stores segmented text blocks mapped to page ranges and vector coordinates.
+Stores extracted text segments, page metadata, and vector embeddings.
 
-| Column | Type | Constraints / Description |
-| :--- | :--- | :--- |
-| `id` | UUID | Primary Key, `DEFAULT gen_random_uuid()` |
-| `document_id` | UUID | Foreign Key references `documents(id)` ON DELETE CASCADE |
-| `content` | TEXT | Not Null, raw markdown/text chunk (~300–500 tokens) |
-| `page_start` | INT | Not Null, starting page number for citations |
-| `page_end` | INT | Not Null, ending page number |
-| `chunk_index` | INT | Not Null, relative ordering index |
-| `embedding` | VECTOR(384) | Vector dimension matching `all-MiniLM-L6-v2` model |
-| `created_at` | TIMESTAMPTZ | Default `NOW()` |
+| Column        | Type        | Description                                                      |
+| ------------- | ----------- | ---------------------------------------------------------------- |
+| `id`          | UUID        | Primary key, generated automatically                             |
+| `document_id` | UUID        | Foreign key referencing `documents(id)` with `ON DELETE CASCADE` |
+| `content`     | TEXT        | Extracted text segment                                           |
+| `page_start`  | INT         | Starting page number                                             |
+| `page_end`    | INT         | Ending page number                                               |
+| `chunk_index` | INT         | Sequential chunk position within a document                      |
+| `embedding`   | VECTOR(384) | Nullable 384-dimensional embedding                               |
+| `created_at`  | TIMESTAMPTZ | Creation timestamp                                               |
 
-### 2.2 Vector Indexing Strategy
+**Chunking configuration:**
 
-To optimize nearest-neighbor similarity searches at scale, we create an HNSW (Hierarchical Navigable Small World) index on the embedding column using cosine distance (`vector_cosine_ops`):
+- Target chunk size: 220 tokens.
+- Maximum chunk size: 256 tokens.
+- Overlap: 12% of the target size.
+- Page metadata is preserved for citation generation.
+
+The embedding dimension corresponds to the `all-MiniLM-L6-v2` model.
+
+### 2.2 Document Processing Lifecycle
+
+The current implementation uses three document statuses:
+
+| Status       | Description                                                                 |
+| ------------ | --------------------------------------------------------------------------- |
+| `processing` | Document ingestion is in progress                                           |
+| `ready`      | Text extraction, chunking, and embedding persistence completed successfully |
+| `failed`     | Available status for processing failures                                    |
+
+A document is marked `ready` only after its chunks and embeddings have been persisted successfully.
+
+**Persistence guarantees:**
+
+- Document insertion, chunk insertion, embedding updates, and the final status update execute within a database transaction.
+- A failed transaction is rolled back to prevent partial database records.
+- The API validates embedding dimensions and numerical values before persistence.
+- The current rollback strategy does not retain a failed document record; persistent failure tracking is a future improvement.
+
+### 2.3 Vector Storage and Indexing
+
+Paplet uses pgvector to store embeddings as `VECTOR(384)`.
+
+For semantic retrieval, the planned indexing strategy uses an HNSW (Hierarchical Navigable Small World) index with cosine distance.
 
 ```sql
--- Enable pgvector extension
-create extension if not exists vector;
+CREATE EXTENSION IF NOT EXISTS vector;
 
--- Create HNSW index for fast approximate nearest neighbor (ANN) search
-create index chunks_embedding_hnsw_idx
-on chunks
-using hnsw (embedding vector_cosine_ops);
+CREATE INDEX chunks_embedding_hnsw_idx
+ON chunks
+USING hnsw (embedding vector_cosine_ops);
 ```
 
-## 3. System Threats & Basic Mitigations
+This index is planned for the retrieval stage and should be applied through a database migration before being considered implemented.
 
-### Threat 1: Dirty Data & Extraction Failures
+## 3. Security & Reliability Considerations
 
-- **Risk:** PDFs with multi-column layouts, tables, or weird formatting can break text parsing, leading to corrupted text chunks and bad vector searches.
-- **Mitigation:** Implement basic cleaning (strip running headers/footers) and enforce strict file size/MIME type limits on uploads.
+### 3.1 PDF Validation and Extraction
 
-### Threat 2: Prompt Injection via PDF Text
+**Risk:** Malformed PDFs, unusual layouts, or unsupported content can produce incomplete or corrupted text.
 
-- **Risk:** A malicious PDF could contain hidden text like "Ignore previous instructions" designed to hijack the LLM.
-- **Mitigation:** Structure the system prompt so the model treats retrieved document chunks strictly as untrusted data rather than instructions.
+**Mitigation:**
 
-### Threat 3: Hallucinated Citations
+- Validate PDF signatures and MIME types.
+- Enforce upload size limits.
+- Reject PDFs without extractable text.
+- Preserve page metadata during extraction.
 
-- **Risk:** The LLM might generate a good answer but invent fake page numbers or attribute quotes incorrectly.
-- **Mitigation:** Write code-level checks to verify that cited source IDs and quotes actually exist within the retrieved text chunks before showing them to the user.
+### 3.2 Prompt Injection
+
+**Risk:** Uploaded documents may contain malicious instructions intended to manipulate the LLM.
+
+**Mitigation:**
+
+- Treat retrieved document content as untrusted input.
+- Separate system instructions from retrieved context.
+- Never allow document content to override system-level instructions.
+
+### 3.3 Citation Integrity
+
+**Risk:** The LLM may generate unsupported page references, source identifiers, or quotations.
+
+**Mitigation:**
+
+- Associate retrieved chunks with their source document and page metadata.
+- Validate citation references against the retrieved context.
+- Avoid presenting unsupported citations as verified sources.
+
+### 3.4 Embedding Integrity
+
+**Risk:** Failed embedding generation or incomplete persistence can leave chunks without valid vectors.
+
+**Mitigation:**
+
+- Validate vector dimensions and numerical values before database insertion.
+- Use transactions for consistent document and chunk persistence.
+- Verify the expected number of updated embeddings.
+- Exclude NULL embeddings from vector retrieval.
