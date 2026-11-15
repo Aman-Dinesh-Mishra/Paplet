@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { pool } from "./db/pool.js";
 import documentsRouter from "./routes/documents.js";
+import searchRouter from "./routes/search.js";
 const app = express();
 app.use(
   cors({
@@ -30,6 +31,8 @@ app.get("/health", async (_req, res) => {
 });
 
 app.use("/documents", documentsRouter);
+app.use("/search", searchRouter);
+
 const port = Number(process.env.PORT ?? 4000);
 app.listen(port, () => {
   console.log(`Paplet API listening on http://localhost:${port}`);

@@ -10,6 +10,11 @@ export type ExtractedPdf = {
   totalPages: number;
 };
 
+type PdfTextItem = {
+  str?: string;
+  hasEOL?: boolean;
+};
+
 export async function extractPdfText(filePath: string): Promise<ExtractedPdf> {
   const fileBuffer = await readFile(filePath);
   const pages: string[] = [];
@@ -17,14 +22,17 @@ export async function extractPdfText(filePath: string): Promise<ExtractedPdf> {
   const result = await pdf(fileBuffer, {
     pagerender: async (pageData) => {
       const content = await pageData.getTextContent();
+      const items = content.items as PdfTextItem[];
 
-      const pageText = (content.items as Array<{ str?: string }>)
-        .map((item) => ("str" in item ? item.str : ""))
-        .join(" ")
+      const pageText = items
+        .map((item) => {
+          const text = item.str ?? "";
+          return text + (item.hasEOL ? "\n" : " ");
+        })
+        .join("")
         .trim();
 
       pages.push(pageText);
-
       return pageText;
     },
   });
