@@ -1,4 +1,5 @@
 import Groq from "groq-sdk";
+import { withRetry } from "../services/retry.service.js";
 
 type ChatInput = {
   system: string;
@@ -32,18 +33,61 @@ export const chat = async ({ system, user }: ChatInput): Promise<string> => {
     throw new Error("LLM_MODEL isn't configured");
   }
 
-  const completion = await getClient().chat.completions.create({
-    model,
-    messages: [
-      { role: "system", content: system },
-      { role: "user", content: user },
-    ],
-    temperature: 0,
-    max_completion_tokens: 1024,
-    response_format: {
-      type: "json_object",
+  const completion = await withRetry(
+    () =>
+      getClient().chat.completions.create({
+        model,
+        messages: [
+          { role: "system", content: system },
+          { role: "user", content: user },
+        ],
+        temperature: 0,
+        reasoning_effort: "low",
+        max_completion_tokens: 2048,
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "paplet_answer",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                answer: {
+                  type: "string",
+                },
+                citations: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      chunkId: {
+                        type: "string",
+                      },
+                      quote: {
+                        type: "string",
+                      },
+                    },
+                    required: ["chunkId", "quote"],
+                    additionalProperties: false,
+                  },
+                },
+                is_answerable: {
+                  type: "boolean",
+                },
+              },
+              required: ["answer", "citations", "is_answerable"],
+              additionalProperties: false,
+            },
+          },
+        },
+      }),
+    {
+      maxAttempts: 3,
+      baseDelayMs: 500,
+      maxDelayMs: 5000,
+      deadlineMs: 60000,
     },
-  });
+  );
 
   const content = completion.choices[0]?.message.content;
 

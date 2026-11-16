@@ -4,8 +4,18 @@ import { pool } from "../db/pool.js";
 import { generateEmbedding } from "../services/embedding.service.js";
 import { chat } from "../llm/groqClient.js";
 import { answerSystemPrompt, buildAnswerPrompt } from "../prompts/answer.js";
+import { validateCitations } from "../services/citation.service.js";
 
 const router = Router();
+
+const SAFE_REFUSAL = {
+  answer:
+    "The retrieved research papers do not contain sufficient evidence to provide a reliable answer.",
+  citations: [],
+  is_answerable: false,
+};
+
+const MIN_RETRIEVAL_SIMILARITY = 0.15;
 
 router.post("/", async (req, res) => {
   const parsed = AskRequestSchema.safeParse(req.body);
@@ -38,15 +48,20 @@ router.post("/", async (req, res) => {
       content: row.content,
       pageStart: row.page_start,
       pageEnd: row.page_end,
+      similarity: Number(row.similarity),
     }));
 
     if (chunks.length === 0) {
-      res.status(200).json({
-        answer:
-          "The retrieved research papers do not contain sufficient evidence to answer this question.",
-        citations: [],
-        is_answerable: false,
-      });
+      res.status(200).json(SAFE_REFUSAL);
+      return;
+    }
+
+    const bestSimilarity = Math.max(...chunks.map((chunk) => chunk.similarity));
+
+    if (bestSimilarity < MIN_RETRIEVAL_SIMILARITY) {
+      console.log("Retrieval similarity below threshold:", bestSimilarity);
+
+      res.status(200).json(SAFE_REFUSAL);
       return;
     }
 
@@ -65,19 +80,34 @@ router.post("/", async (req, res) => {
     try {
       generatedAnswer = JSON.parse(generatedText);
     } catch {
-      res.status(502).json({
-        error: "The language model returned invalid JSON",
-      });
+      console.error("Groq returned invalid JSON:", generatedText);
+
+      res.status(200).json(SAFE_REFUSAL);
       return;
     }
 
     const validatedAnswer = AnswerSchema.safeParse(generatedAnswer);
 
     if (!validatedAnswer.success) {
-      res.status(502).json({
-        error: "The language model returned an invalid answer structure",
-        details: validatedAnswer.error.flatten(),
+      console.error(
+        "Groq returned an invalid answer structure:",
+        validatedAnswer.error.flatten(),
+      );
+
+      res.status(200).json(SAFE_REFUSAL);
+      return;
+    }
+
+    const citationValidation = validateCitations(validatedAnswer.data, chunks);
+
+    if (!citationValidation.valid) {
+      console.error("Citation validation failed:", {
+        errors: citationValidation.errors,
+        generatedCitations: validatedAnswer.data.citations,
+        retrievedChunkIds: chunks.map((chunk) => chunk.id),
       });
+
+      res.status(200).json(SAFE_REFUSAL);
       return;
     }
 

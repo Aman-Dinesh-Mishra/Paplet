@@ -24,7 +24,10 @@ Follow these rules:
 5. Never invent facts, chunk IDs, or supporting quotes.
 6. Cite only chunks that directly support your answer.
 7. If the retrieved context does not contain sufficient evidence, mark the question as unanswerable.
-
+- Citation quotes must be copied character-for-character from one supplied chunk.
+- Keep citation quotes short and focused, preferably one complete sentence.
+- Do not rewrite, summarize, correct, or normalize mathematical symbols in quotes.
+- Preserve the original Unicode characters exactly as supplied.
 Return only valid JSON using this exact structure:
 
 {
