@@ -4,18 +4,7 @@
 
 ## Architecture
 
-```mermaid
-flowchart LR
-    A["React + Vite"] --> B["Express API"]
-    B --> C["PDF Processing"]
-    C --> D["Text Chunking"]
-    D --> E["Embedding Generation"]
-    E --> F[("PostgreSQL + pgvector")]
-    F --> G["Semantic Retrieval"]
-    G --> H["Groq LLM"]
-    H --> B
-    B --> A
-```
+<img width="1536" height="1024" alt="image" src="https://github.com/user-attachments/assets/81c13f57-97d7-4a4f-8fcc-44552194d3f4" />
 
 ## Tech Stack
 
