@@ -21,7 +21,7 @@ export const HealthResponseSchema = z.object({
 export type HealthResponse = z.infer<typeof HealthResponseSchema>;
 
 export const AskRequestSchema = z.object({
-  question: z.string().min(1, "Question cannot be empty"),
+  question: z.string().trim().min(1, "Question cannot be empty"),
   paperIds: z.array(z.string().uuid()).optional(),
 });
 
@@ -64,3 +64,35 @@ export const SearchResponseSchema = z.object({
 export type SearchRequest = z.infer<typeof SearchRequestSchema>;
 export type SearchResult = z.infer<typeof SearchResultSchema>;
 export type SearchResponse = z.infer<typeof SearchResponseSchema>;
+
+export const AnswerCitationSchema = z.object({
+  chunkId: z.string().uuid(),
+  quote: z.string().trim().min(1),
+});
+
+export const AnswerSchema = z
+  .object({
+    answer: z.string().trim().min(1),
+    citations: z.array(AnswerCitationSchema),
+    is_answerable: z.boolean(),
+  })
+  .superRefine((data, context) => {
+    if (!data.is_answerable && data.citations.length > 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["citations"],
+        message: "Unanswerable responses can't contain citations",
+      });
+    }
+
+    if (data.is_answerable && data.citations.length === 0) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["citations"],
+        message: "Answerable responses must contain at least one citation",
+      });
+    }
+  });
+
+export type AnswerCitation = z.infer<typeof AnswerCitationSchema>;
+export type Answer = z.infer<typeof AnswerSchema>;
