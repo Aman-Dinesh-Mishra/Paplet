@@ -1,4 +1,14 @@
-import { countTokens } from "./token.service.js";
+export function countTokens(text: string): number {
+  const trimmedText = text.trim();
+
+  if (!trimmedText) {
+    return 0;
+  }
+
+  const wordCount = trimmedText.split(/\s+/).length;
+
+  return Math.ceil(wordCount * 1.3);
+}
 
 type PageSentence = {
   content: string;
@@ -132,7 +142,6 @@ function packSentences(
       tokenCount: countTokens(content),
     });
 
-    // Do not create another chunk when all sentences are consumed.
     if (start + currentSentences.length >= sentences.length) {
       break;
     }

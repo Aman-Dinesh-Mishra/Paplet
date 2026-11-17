@@ -2,16 +2,19 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { pool } from "./db/pool.js";
-import documentsRouter from "./routes/documents.js";
-import searchRouter from "./routes/search.js";
-import askRouter from "./routes/ask.js";
+import documentsRouter from "./routes/documents.route.js";
+import searchRouter from "./routes/search.route.js";
+import askRouter from "./routes/ask.route.js";
+import { errorHandler } from "./middleware/error-handler.middleware.js";
 
 const app = express();
+
 app.use(
   cors({
     origin: process.env.ALLOWED_ORIGIN ?? "http://localhost:5173",
   }),
 );
+
 app.use(express.json());
 
 app.get("/health", async (_req, res) => {
@@ -36,7 +39,11 @@ app.use("/documents", documentsRouter);
 app.use("/search", searchRouter);
 app.use("/ask", askRouter);
 
+// Centralized error handling must be registered after routes.
+app.use(errorHandler);
+
 const port = Number(process.env.PORT ?? 4000);
+
 app.listen(port, () => {
   console.log(`Paplet API listening on http://localhost:${port}`);
 });

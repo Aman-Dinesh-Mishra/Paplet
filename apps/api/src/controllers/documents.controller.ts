@@ -1,6 +1,5 @@
-import { Router } from "express";
+import type { Request, Response, NextFunction } from "express";
 import { open, unlink } from "node:fs/promises";
-import { pdfUpload } from "../middleware/upload.js";
 import { extractPdfText } from "../services/pdf.service.js";
 import { createChunks } from "../services/chunk.service.js";
 import { pool } from "../db/pool.js";
@@ -8,11 +7,15 @@ import {
   insertDocument,
   insertChunks,
   updateChunkEmbeddings,
+  markDocumentReady,
 } from "../services/document.service.js";
 import { generateEmbeddings } from "../services/embedding.service.js";
-const router = Router();
 
-router.post("/", pdfUpload.single("file"), async (req, res) => {
+export const uploadDocumentController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
   const file = req.file;
 
   if (!file) {
@@ -32,6 +35,7 @@ router.post("/", pdfUpload.single("file"), async (req, res) => {
 
     if (signature.toString() !== "%PDF-") {
       await unlink(file.path);
+
       res.status(400).json({ error: "Invalid PDF file" });
       return;
     }
@@ -59,6 +63,8 @@ router.post("/", pdfUpload.single("file"), async (req, res) => {
 
       await updateChunkEmbeddings(client, document.id, chunks, vectors);
 
+      document = await markDocumentReady(client, document.id);
+
       await client.query("COMMIT");
     } catch (error) {
       await client.query("ROLLBACK");
@@ -69,24 +75,12 @@ router.post("/", pdfUpload.single("file"), async (req, res) => {
 
     res.status(201).json({
       message: "PDF processed successfully",
-      document: {
-        ...document,
-        status: "ready",
-      },
+      document,
       totalPages: extracted.totalPages,
       totalChunks: chunks.length,
     });
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Document processing failed";
-
     await unlink(file.path).catch(() => undefined);
-
-    res.status(500).json({
-      error: "Document processing failed",
-      details: message,
-    });
+    next(error);
   }
-});
-
-export default router;
+};
