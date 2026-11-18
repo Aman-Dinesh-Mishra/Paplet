@@ -1,8 +1,124 @@
 [
   {
-    "id": "q1",
-    "question": "What problem does the paper address?",
-    "paperId": "REPLACE_ME",
-    "expectedKeywords": []
+    "id": "nutrition-001",
+    "question": "What three major dietary patterns were identified using principal component analysis?",
+    "type": "answerable",
+    "goldDocument": "3be06935-f6b7-4028-b722-2eb297071cc0",
+    "goldPages": [4],
+    "goldQuote": "Three major DPs were identified: cereal-savoury, fruit-vegetable-sweets-snacks and animal food patterns."
+  },
+  {
+    "id": "finance-001",
+    "question": "Which three prediction horizons are used by the independent XGBoost classifiers?",
+    "type": "answerable",
+    "goldDocument": "5cbcb384-da0f-4ebb-88c8-a952b3855a1c",
+    "goldPages": [5],
+    "goldQuote": "The prediction component uses three independent XGBoost classifiers to estimate directional movement over 1-day, 10-day, and 15-day horizons."
+  },
+  {
+    "id": "retriever-001",
+    "question": "What optimization problem does G-Retriever use to retrieve relevant subgraphs?",
+    "type": "answerable",
+    "goldDocument": "c8ca8e39-5f85-4ca6-ba8c-57a95e5f75ee",
+    "goldPages": [1],
+    "goldQuote": "G-Retriever performs RAG over a graph by formulating this task as a Prize-Collecting Steiner Tree optimization problem."
+  },
+  {
+    "id": "unanswerable-001",
+    "question": "What is the capital of Japan?",
+    "type": "unanswerable",
+    "goldDocument": null,
+    "goldPages": []
+  },
+  {
+    "id": "unanswerable-002",
+    "question": "What exact salary did the authors receive for conducting this research?",
+    "type": "unanswerable",
+    "goldDocument": null,
+    "goldPages": []
+  },
+  {
+    "id": "nutrition-002",
+    "question": "Which dietary pattern was associated with higher consumption of fruits and vegetables?",
+    "type": "answerable",
+    "goldDocument": "3be06935-f6b7-4028-b722-2eb297071cc0",
+    "goldPages": [4]
+  },
+  {
+    "id": "nutrition-003",
+    "question": "Which statistical method was used to identify the major dietary patterns?",
+    "type": "answerable",
+    "goldDocument": "3be06935-f6b7-4028-b722-2eb297071cc0",
+    "goldPages": [3]
+  },
+  {
+    "id": "finance-002",
+    "question": "Which machine learning algorithm is used for the three directional prediction horizons?",
+    "type": "answerable",
+    "goldDocument": "5cbcb384-da0f-4ebb-88c8-a952b3855a1c",
+    "goldPages": [5]
+  },
+  {
+    "id": "finance-003",
+    "question": "What are the three prediction horizons used by the independent classifiers?",
+    "type": "answerable",
+    "goldDocument": "5cbcb384-da0f-4ebb-88c8-a952b3855a1c",
+    "goldPages": [5]
+  },
+  {
+    "id": "unanswerable-003",
+    "question": "What was the exact training budget allocated to the authors by their institution?",
+    "type": "unanswerable",
+    "goldDocument": null,
+    "goldPages": []
+  },
+  {
+    "id": "nutrition-004",
+    "question": "What study design and data source did the researchers use?",
+    "type": "answerable",
+    "goldDocument": "3be06935-f6b7-4028-b722-2eb297071cc0",
+    "goldPages": [1, 2]
+  },
+  {
+    "id": "nutrition-005",
+    "question": "Across which four Indian cities were participants recruited for the study?",
+    "type": "answerable",
+    "goldDocument": "3be06935-f6b7-4028-b722-2eb297071cc0",
+    "goldPages": [1]
+  },
+  {
+    "id": "nutrition-006",
+    "question": "How many participants were included in the Indian Migration Study, and what was their mean age?",
+    "type": "answerable",
+    "goldDocument": "3be06935-f6b7-4028-b722-2eb297071cc0",
+    "goldPages": [1]
+  },
+  {
+    "id": "nutrition-007",
+    "question": "Which dietary assessment instrument was used to collect information about participants' food consumption?",
+    "type": "answerable",
+    "goldDocument": "3be06935-f6b7-4028-b722-2eb297071cc0",
+    "goldPages": [1, 3]
+  },
+  {
+    "id": "nutrition-008",
+    "question": "What eigenvalue criterion and interpretability considerations were used to retain dietary pattern components in the PCA?",
+    "type": "answerable",
+    "goldDocument": "3be06935-f6b7-4028-b722-2eb297071cc0",
+    "goldPages": [1, 4]
+  },
+  {
+    "id": "nutrition-009",
+    "question": "Which type of regression model was used to investigate associations between dietary patterns and health outcomes?",
+    "type": "answerable",
+    "goldDocument": "3be06935-f6b7-4028-b722-2eb297071cc0",
+    "goldPages": [1, 4]
+  },
+  {
+    "id": "nutrition-010",
+    "question": "Which blood lipid, glucose, and blood pressure measurements were investigated in relation to dietary patterns?",
+    "type": "answerable",
+    "goldDocument": "3be06935-f6b7-4028-b722-2eb297071cc0",
+    "goldPages": [1, 4]
   }
 ]

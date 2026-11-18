@@ -89,10 +89,19 @@ export const chat = async ({ system, user }: ChatInput): Promise<string> => {
     },
   );
 
-  const content = completion.choices[0]?.message.content;
+  const choice = completion.choices[0];
+  const content = choice?.message.content;
 
   if (typeof content !== "string" || !content.trim()) {
-    throw new Error("Groq returned an empty response");
+    console.error("Groq returned empty content:", {
+      model,
+      finishReason: choice?.finish_reason,
+      usage: completion.usage,
+    });
+
+    throw new Error(
+      `Groq returned empty content (finish_reason: ${choice?.finish_reason ?? "unknown"})`,
+    );
   }
 
   return content.trim();

@@ -30,6 +30,7 @@ export async function extractPdfText(filePath: string): Promise<ExtractedPdf> {
           return text + (item.hasEOL ? "\n" : " ");
         })
         .join("")
+        .replace(/\u0000/g, "")
         .trim();
 
       pages.push(pageText);

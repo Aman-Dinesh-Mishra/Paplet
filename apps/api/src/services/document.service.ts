@@ -91,3 +91,22 @@ export const updateChunkEmbeddings = async (
     }
   }
 };
+
+export async function markDocumentReady(
+  client: PoolClient,
+  documentId: string,
+) {
+  const result = await client.query(
+    `UPDATE documents
+     SET status = 'ready'
+     WHERE id = $1
+     RETURNING id, title, status, created_at`,
+    [documentId],
+  );
+
+  if (result.rowCount !== 1) {
+    throw new Error("Failed to update document status");
+  }
+
+  return result.rows[0];
+}

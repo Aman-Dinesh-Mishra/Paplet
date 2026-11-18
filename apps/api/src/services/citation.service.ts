@@ -14,9 +14,18 @@ const normalizeText = (value: string): string => {
   return value
     .normalize("NFKC")
     .replace(/[\u0000-\u001F\u007F]/g, " ")
+    .replace(/[\u2010-\u2015\u2212]/g, "-")
+    .replace(/\s*-\s*/g, "-")
+    .replace(/\s+([,.;:!?])/g, "$1")
+    .replace(/([‘“"(\[])\s+/g, "$1")
+    .replace(/\s+([’”")\]])/g, "$1")
     .replace(/\s+/g, " ")
     .trim()
     .toLowerCase();
+};
+
+const normalizeWithoutHyphens = (value: string): string => {
+  return normalizeText(value).replace(/-/g, "");
 };
 
 export const validateCitations = (
@@ -45,7 +54,13 @@ export const validateCitations = (
       continue;
     }
 
-    if (!normalizedContent.includes(normalizedQuote)) {
+    const strictMatch = normalizedContent.includes(normalizedQuote);
+
+    const hyphenInsensitiveMatch = normalizeWithoutHyphens(
+      matchingChunk.content,
+    ).includes(normalizeWithoutHyphens(citation.quote));
+
+    if (!strictMatch && !hyphenInsensitiveMatch) {
       errors.push(`Citation quote doesn't match chunk: ${citation.chunkId}`);
     }
   }

@@ -6,6 +6,8 @@ import { generateAnswer } from "../services/answer.service.js";
 
 type AskRequestBody = z.infer<typeof AskRequestSchema>;
 
+const RETRIEVAL_TOP_K = 12;
+
 export const askController = async (
   req: Request<Record<string, string>, unknown, AskRequestBody>,
   res: Response,
@@ -14,7 +16,11 @@ export const askController = async (
   try {
     const { question, paperIds } = req.body;
 
-    const { results } = await retrieveChunks(question, 5, paperIds);
+    const { results } = await retrieveChunks(
+      question,
+      RETRIEVAL_TOP_K,
+      paperIds,
+    );
 
     const answer = await generateAnswer(question, results);
 

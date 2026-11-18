@@ -20,11 +20,12 @@
     "eval": "tsx eval/run-eval.ts"
   },
   "devDependencies": {
+    "@types/node": "^26.6.6",
     "@typescript-eslint/eslint-plugin": "^8.72.2",
     "@typescript-eslint/parser": "^8.72.2",
     "eslint": "^8.57.0",
     "prettier": "^3.2.5",
-    "typescript": "^5.4.2",
-    "tsx": "^4.19.0"
+    "tsx": "^4.19.0",
+    "typescript": "^5.4.2"
   }
 }

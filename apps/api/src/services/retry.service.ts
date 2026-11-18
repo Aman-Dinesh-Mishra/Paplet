@@ -60,7 +60,9 @@ const getRetryAfterMs = (error: unknown): number | null => {
     value = typeof headerValue === "string" ? headerValue : null;
   }
 
-  if (!value) return null;
+  if (!value) {
+    return null;
+  }
 
   const seconds = Number(value);
 
@@ -85,16 +87,24 @@ export const withRetry = async <T>(
   options: RetryOptions,
 ): Promise<T> => {
   const { maxAttempts, baseDelayMs, maxDelayMs, deadlineMs } = options;
+
   const startTime = Date.now();
+  let lastError: unknown;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     if (Date.now() - startTime >= deadlineMs) {
+      if (lastError !== undefined) {
+        throw lastError;
+      }
+
       throw new Error("Retry deadline exceeded");
     }
 
     try {
       return await fn();
     } catch (error) {
+      lastError = error;
+
       if (!isRetryableError(error) || attempt === maxAttempts) {
         throw error;
       }
@@ -103,7 +113,7 @@ export const withRetry = async <T>(
       const remainingTime = deadlineMs - elapsed;
 
       if (remainingTime <= 0) {
-        throw new Error("Retry deadline exceeded");
+        throw error;
       }
 
       const retryAfter = getRetryAfterMs(error);
@@ -118,12 +128,12 @@ export const withRetry = async <T>(
       const delay = retryAfter ?? jitterDelay;
 
       if (delay >= remainingTime) {
-        throw new Error("Retry deadline exceeded");
+        throw error;
       }
 
       await sleep(delay);
     }
   }
 
-  throw new Error("Retry attempts exhausted");
+  throw lastError ?? new Error("Retry attempts exhausted");
 };

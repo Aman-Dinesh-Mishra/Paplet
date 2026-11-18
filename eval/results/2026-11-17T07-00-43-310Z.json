@@ -1,0 +1,237 @@
+{
+  "timestamp": "2026-11-17T07:00:43.311Z",
+  "summary": {
+    "totalQuestions": 5,
+    "hitAt5": {
+      "correct": 0,
+      "total": 3,
+      "percentage": 0
+    },
+    "citationValidity": {
+      "valid": 3,
+      "total": 3,
+      "percentage": 100
+    },
+    "refusalAccuracy": {
+      "correct": 5,
+      "total": 5,
+      "percentage": 100
+    },
+    "latencyMs": {
+      "p50": 1483.0212000000001,
+      "p95": 2897.6565
+    }
+  },
+  "results": [
+    {
+      "id": "nutrition-001",
+      "type": "answerable",
+      "hitAt5": false,
+      "citationsValid": true,
+      "refusalCorrect": true,
+      "answerable": true,
+      "retrievedChunks": 5,
+      "retrieved": [
+        {
+          "documentId": "3be06935-f6b7-4028-b722-2eb297071cc0",
+          "pageStart": 3,
+          "pageEnd": 4,
+          "similarity": 0.7271
+        },
+        {
+          "documentId": "3be06935-f6b7-4028-b722-2eb297071cc0",
+          "pageStart": 8,
+          "pageEnd": 9,
+          "similarity": 0.6637
+        },
+        {
+          "documentId": "3be06935-f6b7-4028-b722-2eb297071cc0",
+          "pageStart": 4,
+          "pageEnd": 4,
+          "similarity": 0.6295
+        },
+        {
+          "documentId": "3be06935-f6b7-4028-b722-2eb297071cc0",
+          "pageStart": 10,
+          "pageEnd": 10,
+          "similarity": 0.622
+        },
+        {
+          "documentId": "3be06935-f6b7-4028-b722-2eb297071cc0",
+          "pageStart": 2,
+          "pageEnd": 2,
+          "similarity": 0.6182
+        }
+      ],
+      "latencyMs": 2897.66
+    },
+    {
+      "id": "finance-001",
+      "type": "answerable",
+      "hitAt5": false,
+      "citationsValid": true,
+      "refusalCorrect": true,
+      "answerable": true,
+      "retrievedChunks": 5,
+      "retrieved": [
+        {
+          "documentId": "5cbcb384-da0f-4ebb-88c8-a952b3855a1c",
+          "pageStart": 5,
+          "pageEnd": 5,
+          "similarity": 0.5836
+        },
+        {
+          "documentId": "5cbcb384-da0f-4ebb-88c8-a952b3855a1c",
+          "pageStart": 2,
+          "pageEnd": 3,
+          "similarity": 0.3662
+        },
+        {
+          "documentId": "5cbcb384-da0f-4ebb-88c8-a952b3855a1c",
+          "pageStart": 11,
+          "pageEnd": 11,
+          "similarity": 0.3593
+        },
+        {
+          "documentId": "5cbcb384-da0f-4ebb-88c8-a952b3855a1c",
+          "pageStart": 14,
+          "pageEnd": 14,
+          "similarity": 0.3588
+        },
+        {
+          "documentId": "5cbcb384-da0f-4ebb-88c8-a952b3855a1c",
+          "pageStart": 13,
+          "pageEnd": 13,
+          "similarity": 0.3504
+        }
+      ],
+      "latencyMs": 1483.02
+    },
+    {
+      "id": "retriever-001",
+      "type": "answerable",
+      "hitAt5": false,
+      "citationsValid": true,
+      "refusalCorrect": true,
+      "answerable": true,
+      "retrievedChunks": 5,
+      "retrieved": [
+        {
+          "documentId": "c8ca8e39-5f85-4ca6-ba8c-57a95e5f75ee",
+          "pageStart": 6,
+          "pageEnd": 6,
+          "similarity": 0.6116
+        },
+        {
+          "documentId": "c8ca8e39-5f85-4ca6-ba8c-57a95e5f75ee",
+          "pageStart": 7,
+          "pageEnd": 7,
+          "similarity": 0.574
+        },
+        {
+          "documentId": "c8ca8e39-5f85-4ca6-ba8c-57a95e5f75ee",
+          "pageStart": 18,
+          "pageEnd": 19,
+          "similarity": 0.5679
+        },
+        {
+          "documentId": "c8ca8e39-5f85-4ca6-ba8c-57a95e5f75ee",
+          "pageStart": 8,
+          "pageEnd": 8,
+          "similarity": 0.5659
+        },
+        {
+          "documentId": "c8ca8e39-5f85-4ca6-ba8c-57a95e5f75ee",
+          "pageStart": 8,
+          "pageEnd": 9,
+          "similarity": 0.5655
+        }
+      ],
+      "latencyMs": 1013.63
+    },
+    {
+      "id": "unanswerable-001",
+      "type": "unanswerable",
+      "hitAt5": null,
+      "citationsValid": null,
+      "refusalCorrect": true,
+      "answerable": false,
+      "retrievedChunks": 5,
+      "retrieved": [
+        {
+          "documentId": "3be06935-f6b7-4028-b722-2eb297071cc0",
+          "pageStart": 11,
+          "pageEnd": 11,
+          "similarity": 0.1658
+        },
+        {
+          "documentId": "c8ca8e39-5f85-4ca6-ba8c-57a95e5f75ee",
+          "pageStart": 22,
+          "pageEnd": 22,
+          "similarity": 0.1155
+        },
+        {
+          "documentId": "3be06935-f6b7-4028-b722-2eb297071cc0",
+          "pageStart": 11,
+          "pageEnd": 11,
+          "similarity": 0.0994
+        },
+        {
+          "documentId": "c8ca8e39-5f85-4ca6-ba8c-57a95e5f75ee",
+          "pageStart": 17,
+          "pageEnd": 17,
+          "similarity": 0.0904
+        },
+        {
+          "documentId": "3be06935-f6b7-4028-b722-2eb297071cc0",
+          "pageStart": 10,
+          "pageEnd": 10,
+          "similarity": 0.0843
+        }
+      ],
+      "latencyMs": 1278.59
+    },
+    {
+      "id": "unanswerable-002",
+      "type": "unanswerable",
+      "hitAt5": null,
+      "citationsValid": null,
+      "refusalCorrect": true,
+      "answerable": false,
+      "retrievedChunks": 5,
+      "retrieved": [
+        {
+          "documentId": "3be06935-f6b7-4028-b722-2eb297071cc0",
+          "pageStart": 4,
+          "pageEnd": 4,
+          "similarity": 0.2629
+        },
+        {
+          "documentId": "3be06935-f6b7-4028-b722-2eb297071cc0",
+          "pageStart": 6,
+          "pageEnd": 6,
+          "similarity": 0.2614
+        },
+        {
+          "documentId": "3be06935-f6b7-4028-b722-2eb297071cc0",
+          "pageStart": 11,
+          "pageEnd": 11,
+          "similarity": 0.258
+        },
+        {
+          "documentId": "3be06935-f6b7-4028-b722-2eb297071cc0",
+          "pageStart": 7,
+          "pageEnd": 7,
+          "similarity": 0.2533
+        },
+        {
+          "documentId": "3be06935-f6b7-4028-b722-2eb297071cc0",
+          "pageStart": 11,
+          "pageEnd": 11,
+          "similarity": 0.2477
+        }
+      ],
+      "latencyMs": 2892.45
+    }
+  ]
+}
