@@ -1,5 +1,5 @@
 import type { Request, Response, NextFunction } from "express";
-import { open, unlink } from "node:fs/promises";
+import { unlink } from "node:fs/promises";
 import { extractPdfText } from "../services/pdf.service.js";
 import { createChunks } from "../services/chunk.service.js";
 import { pool } from "../db/pool.js";
@@ -24,22 +24,6 @@ export const uploadDocumentController = async (
   }
 
   try {
-    const fileHandle = await open(file.path, "r");
-    const signature = Buffer.alloc(5);
-
-    try {
-      await fileHandle.read(signature, 0, 5, 0);
-    } finally {
-      await fileHandle.close();
-    }
-
-    if (signature.toString() !== "%PDF-") {
-      await unlink(file.path);
-
-      res.status(400).json({ error: "Invalid PDF file" });
-      return;
-    }
-
     const extracted = await extractPdfText(file.path);
     const chunks = createChunks(extracted.pages);
 
@@ -52,33 +36,36 @@ export const uploadDocumentController = async (
     );
 
     const client = await pool.connect();
-    let document;
 
     try {
       await client.query("BEGIN");
 
-      document = await insertDocument(client, file.originalname, file.path);
+      const document = await insertDocument(
+        client,
+        file.originalname,
+        file.path,
+      );
 
       await insertChunks(client, document.id, chunks);
 
       await updateChunkEmbeddings(client, document.id, chunks, vectors);
 
-      document = await markDocumentReady(client, document.id);
+      const readyDocument = await markDocumentReady(client, document.id);
 
       await client.query("COMMIT");
+
+      res.status(201).json({
+        message: "PDF processed successfully",
+        document: readyDocument,
+        totalPages: extracted.totalPages,
+        totalChunks: chunks.length,
+      });
     } catch (error) {
-      await client.query("ROLLBACK");
+      await client.query("ROLLBACK").catch(() => undefined);
       throw error;
     } finally {
       client.release();
     }
-
-    res.status(201).json({
-      message: "PDF processed successfully",
-      document,
-      totalPages: extracted.totalPages,
-      totalChunks: chunks.length,
-    });
   } catch (error) {
     await unlink(file.path).catch(() => undefined);
     next(error);

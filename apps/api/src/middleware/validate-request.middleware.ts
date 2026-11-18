@@ -1,21 +1,26 @@
 import type { RequestHandler } from "express";
 import { z } from "zod";
 
+type ValidationTarget = "body" | "query" | "params";
+
 export const validateRequest = <T extends z.ZodType>(
   schema: T,
-): RequestHandler<Record<string, string>, unknown, z.infer<T>> => {
+  target: ValidationTarget = "body",
+): RequestHandler => {
   return (req, res, next) => {
-    const parsed = schema.safeParse(req.body);
+    const request = req as unknown as Record<ValidationTarget, unknown>;
+
+    const parsed = schema.safeParse(request[target]);
 
     if (!parsed.success) {
       res.status(400).json({
-        error: "Invalid request",
+        error: `Invalid request ${target}`,
         details: parsed.error.flatten(),
       });
       return;
     }
 
-    req.body = parsed.data;
+    request[target] = parsed.data;
     next();
   };
 };
