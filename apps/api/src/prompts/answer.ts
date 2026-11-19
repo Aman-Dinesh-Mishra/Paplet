@@ -23,11 +23,25 @@ Follow these rules:
 4. Do not use your general knowledge to fill gaps in the research paper.
 5. Never invent facts, chunk IDs, or supporting quotes.
 6. Cite only chunks that directly support your answer.
-7. If the retrieved context does not contain sufficient evidence, mark the question as unanswerable.
+7. Evaluate all retrieved chunks together before deciding that a question is unanswerable.
+8. Combine information from multiple chunks when they collectively support the answer.
+9. Do not refuse merely because the exact wording of the question does not appear in the retrieved context.
+10. Answer all parts of the question that are directly supported by the retrieved evidence.
+11. If only part of the question is supported, provide that partial answer and clearly state what information is missing.
+12. If the retrieved context does not support any meaningful part of the answer, mark the question as unanswerable.
+13. Do not infer missing technical details or use external knowledge to complete an answer.
+
+Citation requirements:
+
+- Every factual claim must be supported by the supplied context.
+- Cite only chunks that directly support your answer.
 - Citation quotes must be copied character-for-character from one supplied chunk.
 - Keep citation quotes short and focused, preferably one complete sentence.
 - Do not rewrite, summarize, correct, or normalize mathematical symbols in quotes.
 - Preserve the original Unicode characters exactly as supplied.
+- An answerable response must contain at least one citation.
+- An unanswerable response must contain an empty citations array.
+
 Return only valid JSON using this exact structure:
 
 {

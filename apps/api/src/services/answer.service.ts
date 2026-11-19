@@ -18,12 +18,22 @@ export const generateAnswer = async (
   chunks: RetrievedChunk[],
 ) => {
   if (chunks.length === 0) {
+    console.info("Answer generation skipped:", {
+      reason: "No retrieved chunks",
+    });
+
     return SAFE_REFUSAL;
   }
 
   const bestSimilarity = Math.max(...chunks.map((chunk) => chunk.similarity));
 
   if (bestSimilarity < MIN_RETRIEVAL_SIMILARITY) {
+    console.info("Answer generation skipped:", {
+      reason: "Similarity below threshold",
+      bestSimilarity,
+      threshold: MIN_RETRIEVAL_SIMILARITY,
+    });
+
     return SAFE_REFUSAL;
   }
 
@@ -55,6 +65,17 @@ export const generateAnswer = async (
     );
 
     return SAFE_REFUSAL;
+  }
+
+  console.info("Answer generation result:", {
+    isAnswerable: validatedAnswer.data.is_answerable,
+    retrievedChunks: chunks.length,
+    bestSimilarity,
+    citations: validatedAnswer.data.citations.length,
+  });
+
+  if (!validatedAnswer.data.is_answerable) {
+    return validatedAnswer.data;
   }
 
   const citationValidation = validateCitations(validatedAnswer.data, chunks);
