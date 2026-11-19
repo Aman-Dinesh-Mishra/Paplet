@@ -29,12 +29,12 @@ export const retrieveChunks = async (
   const result = await pool.query(
     `SELECT *
      FROM match_chunks(
-       $1::VECTOR,
-       $2::INTEGER,
+       $1::UUID,
+       $2::VECTOR,
        $3::INTEGER,
        $4::UUID[]
      )`,
-    [`[${embedding.join(",")}]`, topK, documentIds ?? null],
+    [userId, `[${embedding.join(",")}]`, topK, documentIds ?? null],
   );
 
   const results: RetrievedChunk[] = result.rows.map((row) => ({

@@ -1,11 +1,13 @@
 import { pipeline } from "@huggingface/transformers";
+
 const MODEL_ID = "Xenova/all-MiniLM-L6-v2";
 const EMBEDDING_DIMENSIONS = 384;
-const BATCH_SIZE = 16;
+const BATCH_SIZE = 4;
 
 type EmbeddingTensor = {
   tolist(): number[][];
 };
+
 type FeatureExtractionPipeline = (
   texts: string | string[],
   options: {
@@ -18,14 +20,26 @@ let extractorPromise: Promise<FeatureExtractionPipeline> | null = null;
 
 async function getEmbeddingPipeline(): Promise<FeatureExtractionPipeline> {
   if (!extractorPromise) {
-    extractorPromise = pipeline("feature-extraction", MODEL_ID)
+    extractorPromise = pipeline("feature-extraction", MODEL_ID, {
+      dtype: "q8",
+    })
       .then((model) => model as unknown as FeatureExtractionPipeline)
-      .catch((err) => {
+      .catch((error) => {
         extractorPromise = null;
-        throw err;
+        throw error;
       });
   }
+
   return extractorPromise;
+}
+
+function validateEmbedding(embedding: number[]): void {
+  if (
+    embedding.length !== EMBEDDING_DIMENSIONS ||
+    !embedding.every(Number.isFinite)
+  ) {
+    throw new Error("Generated embedding has an invalid format");
+  }
 }
 
 export async function initializeEmbeddingModel(): Promise<void> {
@@ -34,23 +48,26 @@ export async function initializeEmbeddingModel(): Promise<void> {
 
 export async function generateEmbedding(text: string): Promise<number[]> {
   const input = text.trim();
+
   if (!input) {
-    throw new Error("Cannot Generate an embedding for empty text");
+    throw new Error("Cannot generate an embedding for empty text");
   }
+
   const extractor = await getEmbeddingPipeline();
 
   const output = await extractor(input, {
     pooling: "mean",
     normalize: true,
   });
+
   const embedding = output.tolist()[0];
-  if (
-    !embedding ||
-    embedding.length != EMBEDDING_DIMENSIONS ||
-    !embedding.every(Number.isFinite)
-  ) {
-    throw new Error("Generated Embedding has an invalid format");
+
+  if (!embedding) {
+    throw new Error("No embedding was generated");
   }
+
+  validateEmbedding(embedding);
+
   return embedding;
 }
 
@@ -87,15 +104,9 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
     }
 
     for (const embedding of batchEmbeddings) {
-      if (
-        embedding.length !== EMBEDDING_DIMENSIONS ||
-        !embedding.every(Number.isFinite)
-      ) {
-        throw new Error("Generated embedding has an invalid format");
-      }
+      validateEmbedding(embedding);
+      embeddings.push(embedding);
     }
-
-    embeddings.push(...batchEmbeddings);
   }
 
   return embeddings;
