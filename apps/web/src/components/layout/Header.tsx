@@ -1,12 +1,20 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Badge,
   Burger,
+  Button,
   Group,
   SegmentedControl,
   useMantineColorScheme,
 } from "@mantine/core";
-import { IconSun, IconMoon, IconDeviceDesktop } from "@tabler/icons-react";
+import {
+  IconSun,
+  IconMoon,
+  IconDeviceDesktop,
+  IconLogout,
+} from "@tabler/icons-react";
+import { useAuth } from "../../context/AuthContext";
 
 type HeaderProps = {
   opened: boolean;
@@ -15,7 +23,11 @@ type HeaderProps = {
 
 const Header = ({ opened, onToggle }: HeaderProps) => {
   const { colorScheme, setColorScheme } = useMantineColorScheme();
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
   const [health, setHealth] = useState("Checking");
+  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     const url = import.meta.env.VITE_API_URL;
@@ -46,6 +58,17 @@ const Header = ({ opened, onToggle }: HeaderProps) => {
 
     return () => controller.abort();
   }, []);
+
+  const handleLogout = async () => {
+    try {
+      setLoggingOut(true);
+      await signOut();
+      navigate("/", { replace: true });
+    } catch (error) {
+      console.error("Logout failed:", error);
+      setLoggingOut(false);
+    }
+  };
 
   return (
     <Group
@@ -78,6 +101,18 @@ const Header = ({ opened, onToggle }: HeaderProps) => {
             { value: "auto", label: <IconDeviceDesktop size={16} /> },
           ]}
         />
+
+        <Button
+          variant="subtle"
+          color="red"
+          size="sm"
+          leftSection={<IconLogout size={16} />}
+          onClick={handleLogout}
+          loading={loggingOut}
+          disabled={loggingOut}
+        >
+          Logout
+        </Button>
       </Group>
     </Group>
   );

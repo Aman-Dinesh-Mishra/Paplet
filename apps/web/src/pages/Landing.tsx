@@ -7,17 +7,22 @@ import {
   Divider,
   Group,
   Paper,
+  SegmentedControl,
   SimpleGrid,
   Stack,
   Text,
   ThemeIcon,
   Title,
+  useMantineColorScheme,
 } from "@mantine/core";
 import {
   IconBook2,
   IconFileSearch,
   IconMessageCircle,
   IconArrowRight,
+  IconSun,
+  IconMoon,
+  IconDeviceDesktop,
 } from "@tabler/icons-react";
 import { useAuth } from "../context/AuthContext";
 
@@ -44,6 +49,7 @@ const features = [
 
 const Landing = () => {
   const { user, loading } = useAuth();
+  const { colorScheme, setColorScheme } = useMantineColorScheme();
 
   const destination = user ? "/app" : "/login";
   const actionLabel = user ? "Open Workspace" : "Get Started";
@@ -59,10 +65,24 @@ const Landing = () => {
             </Text>
           </Group>
 
-          <Group gap="lg">
+          <Group gap="md">
             <Anchor href="#features" c="dimmed" underline="never">
               Features
             </Anchor>
+
+            <SegmentedControl
+              size="sm"
+              radius="md"
+              value={colorScheme}
+              onChange={(value) =>
+                setColorScheme(value as "light" | "dark" | "auto")
+              }
+              data={[
+                { value: "light", label: <IconSun size={16} /> },
+                { value: "dark", label: <IconMoon size={16} /> },
+                { value: "auto", label: <IconDeviceDesktop size={16} /> },
+              ]}
+            />
 
             <Button
               component={Link}
