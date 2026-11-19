@@ -1,7 +1,5 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 import {
-  Badge,
   Burger,
   Button,
   Group,
@@ -14,6 +12,7 @@ import {
   IconDeviceDesktop,
   IconLogout,
 } from "@tabler/icons-react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 type HeaderProps = {
@@ -25,39 +24,7 @@ const Header = ({ opened, onToggle }: HeaderProps) => {
   const { colorScheme, setColorScheme } = useMantineColorScheme();
   const { signOut } = useAuth();
   const navigate = useNavigate();
-
-  const [health, setHealth] = useState("Checking");
   const [loggingOut, setLoggingOut] = useState(false);
-
-  useEffect(() => {
-    const url = import.meta.env.VITE_API_URL;
-
-    if (!url) {
-      setHealth("Unavailable");
-      return;
-    }
-
-    const controller = new AbortController();
-
-    fetch(`${url}/health`, { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error("Health check failed");
-        }
-
-        return response.json();
-      })
-      .then((data) => {
-        setHealth(data.db === "connected" ? "Connected" : "Unavailable");
-      })
-      .catch((error: unknown) => {
-        if (error instanceof Error && error.name !== "AbortError") {
-          setHealth("Unavailable");
-        }
-      });
-
-    return () => controller.abort();
-  }, []);
 
   const handleLogout = async () => {
     try {
@@ -66,6 +33,7 @@ const Header = ({ opened, onToggle }: HeaderProps) => {
       navigate("/", { replace: true });
     } catch (error) {
       console.error("Logout failed:", error);
+    } finally {
       setLoggingOut(false);
     }
   };
@@ -86,8 +54,6 @@ const Header = ({ opened, onToggle }: HeaderProps) => {
       />
 
       <Group gap="sm" wrap="nowrap">
-        <Badge color={health === "Connected" ? "teal" : "gray"}>{health}</Badge>
-
         <SegmentedControl
           size="sm"
           radius="md"
@@ -104,12 +70,11 @@ const Header = ({ opened, onToggle }: HeaderProps) => {
 
         <Button
           variant="subtle"
-          color="red"
+          color="gray"
           size="sm"
           leftSection={<IconLogout size={16} />}
           onClick={handleLogout}
           loading={loggingOut}
-          disabled={loggingOut}
         >
           Logout
         </Button>
