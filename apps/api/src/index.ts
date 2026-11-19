@@ -38,10 +38,14 @@ app.get("/health", async (_req, res) => {
       db: "connected",
       time: new Date().toISOString(),
     });
-  } catch {
+  } catch (error) {
+    console.error("Database health check failed:", error);
+
     res.status(503).json({
       status: "error",
       db: "disconnected",
+      message:
+        error instanceof Error ? error.message : "Unknown database error",
       time: new Date().toISOString(),
     });
   }
