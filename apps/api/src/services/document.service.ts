@@ -1,16 +1,18 @@
 import type { PoolClient } from "pg";
+import { pool } from "../db/pool.js";
 import type { DocumentChunk } from "./chunk.service.js";
 
 export async function insertDocument(
   client: PoolClient,
   title: string,
   filePath: string,
+  userId: string,
 ) {
   const result = await client.query(
-    `INSERT INTO documents (title, file_path)
-     VALUES ($1, $2)
+    `INSERT INTO documents (title, file_path, user_id)
+     VALUES ($1, $2, $3)
      RETURNING id, title, status, created_at`,
-    [title, filePath],
+    [title, filePath, userId],
   );
 
   return result.rows[0];
@@ -95,13 +97,14 @@ export const updateChunkEmbeddings = async (
 export async function markDocumentReady(
   client: PoolClient,
   documentId: string,
+  userId: string,
 ) {
   const result = await client.query(
     `UPDATE documents
      SET status = 'ready'
-     WHERE id = $1
+     WHERE id = $1 AND user_id = $2
      RETURNING id, title, status, created_at`,
-    [documentId],
+    [documentId, userId],
   );
 
   if (result.rowCount !== 1) {
@@ -109,4 +112,23 @@ export async function markDocumentReady(
   }
 
   return result.rows[0];
+}
+
+export async function listDocuments(userId: string) {
+  const result = await pool.query(
+    `SELECT
+       d.id,
+       d.title,
+       d.status,
+       d.created_at AS "createdAt",
+       COUNT(c.id)::INTEGER AS "totalChunks"
+     FROM documents d
+     LEFT JOIN chunks c ON c.document_id = d.id
+     WHERE d.user_id = $1
+     GROUP BY d.id
+     ORDER BY d.created_at DESC`,
+    [userId],
+  );
+
+  return result.rows;
 }

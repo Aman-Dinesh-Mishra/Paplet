@@ -7,14 +7,10 @@ import { pool } from "./db/pool.js";
 import documentsRouter from "./routes/documents.route.js";
 import searchRouter from "./routes/search.route.js";
 import askRouter from "./routes/ask.route.js";
-import {
-  apiLimiter,
-  askLimiter,
-  uploadLimiter,
-} from "./middleware/rate-limit.middleware.js";
+import { apiLimiter, askLimiter } from "./middleware/rate-limit.middleware.js";
 import { requestLogger } from "./middleware/logger.middleware.js";
 import { errorHandler } from "./middleware/error-handler.middleware.js";
-
+import { authenticateUser } from "./middleware/auth.middleware.js";
 const app = express();
 
 app.set("trust proxy", 1);
@@ -25,7 +21,7 @@ app.use(
   cors({
     origin: process.env.ALLOWED_ORIGIN ?? "http://localhost:5173",
     methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   }),
 );
 
@@ -51,9 +47,9 @@ app.get("/health", async (_req, res) => {
   }
 });
 
-app.use("/documents", uploadLimiter, documentsRouter);
-app.use("/search", searchRouter);
-app.use("/ask", askLimiter, askRouter);
+app.use("/documents", authenticateUser, documentsRouter);
+app.use("/search", authenticateUser, searchRouter);
+app.use("/ask", authenticateUser, askLimiter, askRouter);
 
 app.use(errorHandler);
 

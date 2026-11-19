@@ -4,19 +4,14 @@ import {
   type SearchRequest,
   type SearchResponse,
 } from "@paplet/shared";
-
-const API_URL = import.meta.env.VITE_API_URL;
+import { apiFetch } from "./api";
 
 export const searchDocuments = async (
   request: SearchRequest,
 ): Promise<SearchResponse> => {
   const validatedRequest = SearchRequestSchema.parse(request);
 
-  if (!API_URL) {
-    throw new Error("VITE_API_URL is not configured");
-  }
-
-  const response = await fetch(`${API_URL}/search`, {
+  const response = await apiFetch("/search", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

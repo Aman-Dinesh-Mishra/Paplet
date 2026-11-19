@@ -14,6 +14,7 @@ export const searchController = async (
     const { query, topK, documentIds } = req.body;
 
     const { results, latencyMs } = await retrieveChunks(
+      req.user!.id,
       query,
       topK,
       documentIds,

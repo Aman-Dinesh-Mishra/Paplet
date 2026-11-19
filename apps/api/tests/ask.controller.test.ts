@@ -22,7 +22,11 @@ describe("askController", () => {
       question: "How does collaborative filtering work?",
       paperIds: undefined,
     },
-  } as Request<
+    user: {
+      id: "test-user-id",
+      email: "test@example.com",
+    },
+  } as unknown as Request<
     Record<string, string>,
     unknown,
     {
@@ -75,6 +79,7 @@ describe("askController", () => {
     await askController(mockRequest, mockResponse, mockNext);
 
     expect(retrieveChunksMock).toHaveBeenCalledWith(
+      "test-user-id",
       "How does collaborative filtering work?",
       12,
       undefined,

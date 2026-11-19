@@ -17,6 +17,7 @@ export const askController = async (
     const { question, paperIds } = req.body;
 
     const { results } = await retrieveChunks(
+      req.user!.id,
       question,
       RETRIEVAL_TOP_K,
       paperIds,

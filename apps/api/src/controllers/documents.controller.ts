@@ -8,8 +8,23 @@ import {
   insertChunks,
   updateChunkEmbeddings,
   markDocumentReady,
+  listDocuments,
 } from "../services/document.service.js";
 import { generateEmbeddings } from "../services/embedding.service.js";
+
+export const listDocumentsController = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const documents = await listDocuments(req.user!.id);
+
+    res.status(200).json({ documents });
+  } catch (error) {
+    next(error);
+  }
+};
 
 export const uploadDocumentController = async (
   req: Request,
@@ -44,13 +59,18 @@ export const uploadDocumentController = async (
         client,
         file.originalname,
         file.path,
+        req.user!.id,
       );
 
       await insertChunks(client, document.id, chunks);
 
       await updateChunkEmbeddings(client, document.id, chunks, vectors);
 
-      const readyDocument = await markDocumentReady(client, document.id);
+      const readyDocument = await markDocumentReady(
+        client,
+        document.id,
+        req.user!.id,
+      );
 
       await client.query("COMMIT");
 

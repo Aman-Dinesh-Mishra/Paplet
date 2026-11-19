@@ -17,6 +17,7 @@ export type RetrievalResult = {
 };
 
 export const retrieveChunks = async (
+  userId: string,
   query: string,
   topK = 5,
   documentIds?: string[],
@@ -30,7 +31,8 @@ export const retrieveChunks = async (
      FROM match_chunks(
        $1::VECTOR,
        $2::INTEGER,
-       $3::UUID[]
+       $3::INTEGER,
+       $4::UUID[]
      )`,
     [`[${embedding.join(",")}]`, topK, documentIds ?? null],
   );

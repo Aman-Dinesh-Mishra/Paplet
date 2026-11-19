@@ -3,6 +3,7 @@ import { mkdirSync } from "fs";
 import { randomUUID } from "node:crypto";
 import { dirname, resolve } from "node:path";
 import multer from "multer";
+
 const currentDirectory = dirname(fileURLToPath(import.meta.url));
 const uploadDirectory = resolve(currentDirectory, "../../uploads");
 
@@ -16,6 +17,8 @@ const storage = multer.diskStorage({
     callback(null, `${randomUUID()}.pdf`);
   },
 });
+
+
 const fileFilter: multer.Options["fileFilter"] = (_req, file, callback) => {
   if (file.mimetype !== "application/pdf") {
     callback(new Error("Only PDF Files are allowed"));
@@ -23,6 +26,8 @@ const fileFilter: multer.Options["fileFilter"] = (_req, file, callback) => {
   }
   callback(null, true);
 };
+
+
 export const pdfUpload = multer({
   storage,
   fileFilter,
