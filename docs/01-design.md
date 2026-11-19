@@ -1,161 +1,209 @@
-# 01 – Design
+# System Design
 
 ## 1. Architecture Overview
 
-Paplet follows a modular architecture with a React frontend, Express API, PostgreSQL vector storage, and external LLM integration.
+Paplet is a document-grounded question-answering application built using a Retrieval-Augmented Generation (RAG) architecture.
 
-```text
-React + TypeScript
-        |
-     REST API
-        |
-Express + TypeScript
-   |                |
-   v                v
-Document          Question
-Ingestion         Answering
-   |                |
-   v                v
-Extract           Embed Query
-   |                |
-Chunk              v
-   |             Vector Search
-Embed              |
-   |                v
-   v             Context + LLM
-PostgreSQL          |
-+ pgvector          v
-                Citation Validation
+The system consists of three main application layers:
+
+- **Frontend:** React and TypeScript application for authentication, document management and research queries.
+- **API:** Node.js and Express backend responsible for authentication, document ingestion, retrieval and answer generation.
+- **Data and inference services:** Supabase PostgreSQL with pgvector for persistence and vector search, a local embedding model for vector generation, and Groq for LLM inference.
+
+### High-level architecture
+
+```mermaid
+flowchart LR
+    U[User] --> W[React Frontend]
+    W -->|Authenticated requests| A[Express API]
+
+    A --> I[Document Ingestion]
+    I --> P[PDF Text Extraction]
+    P --> C[Text Chunking]
+    C --> E[Embedding Generation]
+    E --> DB[(PostgreSQL + pgvector)]
+
+    A --> R[Retrieval]
+    R --> DB
+    R --> G[Groq LLM]
+    G --> V[Output and Citation Validation]
+    V --> W
 ```
 
-**Technology responsibilities:**
+## 2. Technology Responsibilities
 
-- **Frontend:** React and TypeScript for document uploads and research-paper interaction.
-- **API:** Express and TypeScript for ingestion, retrieval, and request orchestration.
-- **Database:** PostgreSQL with pgvector for document metadata, text chunks, and vector embeddings.
-- **Embedding model:** `all-MiniLM-L6-v2` for 384-dimensional text embeddings.
-- **LLM:** Groq API for answer generation.
+| Component        | Technology                   | Responsibility                             |
+| ---------------- | ---------------------------- | ------------------------------------------ |
+| Frontend         | React, TypeScript            | User interface and application state       |
+| UI               | Mantine                      | Interface components                       |
+| Routing          | React Router                 | Public and protected application routes    |
+| API              | Node.js, Express, TypeScript | Application endpoints and orchestration    |
+| Shared contracts | TypeScript and Zod           | Shared validation schemas                  |
+| Authentication   | Supabase Auth                | User authentication and session management |
+| Database         | Supabase PostgreSQL          | Persistent document and chunk storage      |
+| Vector search    | pgvector                     | Similarity-based retrieval                 |
+| Embeddings       | Xenova/all-MiniLM-L6-v2      | 384-dimensional text embeddings            |
+| LLM              | Groq API                     | Context-grounded answer generation         |
 
-The ingestion pipeline and embedding persistence are implemented. Semantic retrieval and answer generation are subsequent implementation stages.
+## 3. Document Ingestion Pipeline
 
-## 2. Data Model & Database Schema
+The ingestion pipeline converts an uploaded PDF into searchable document chunks.
 
-Paplet uses PostgreSQL hosted on Supabase with the `pgvector` extension. Relational metadata and vector embeddings are stored in the same database.
+1. **Upload:** The API accepts PDF files and validates the file type, signature and size.
+2. **Text extraction:** PDF text is extracted while retaining page information.
+3. **Chunking:** Extracted text is divided into smaller overlapping chunks.
+4. **Embedding generation:** Each chunk is converted into a 384-dimensional vector.
+5. **Persistence:** Document metadata, chunks and embeddings are stored in PostgreSQL.
+6. **Status management:** Document processing status is maintained as processing, ready or failed.
 
-### 2.1 Tables
+### Chunking configuration
 
-#### `documents`
+| Parameter            |                    Value |
+| -------------------- | -----------------------: |
+| Target chunk size    |               220 tokens |
+| Maximum chunk size   |               256 tokens |
+| Overlap              | 12% of target chunk size |
+| Embedding dimensions |                      384 |
 
-Stores uploaded PDF metadata and processing status.
+Page metadata is retained to support source traceability and citation generation.
 
-| Column          | Type        | Description                              |
-| --------------- | ----------- | ---------------------------------------- |
-| `id`            | UUID        | Primary key, generated automatically     |
-| `title`         | TEXT        | Original PDF filename                    |
-| `file_path`     | TEXT        | Local storage path or storage identifier |
-| `status`        | TEXT        | `processing`, `ready`, or `failed`       |
-| `error_message` | TEXT        | Nullable processing failure details      |
-| `created_at`    | TIMESTAMPTZ | Creation timestamp                       |
+## 4. Storage Design
 
-#### `chunks`
+Paplet uses PostgreSQL with the pgvector extension.
 
-Stores extracted text segments, page metadata, and vector embeddings.
+### Documents
 
-| Column        | Type        | Description                                                      |
-| ------------- | ----------- | ---------------------------------------------------------------- |
-| `id`          | UUID        | Primary key, generated automatically                             |
-| `document_id` | UUID        | Foreign key referencing `documents(id)` with `ON DELETE CASCADE` |
-| `content`     | TEXT        | Extracted text segment                                           |
-| `page_start`  | INT         | Starting page number                                             |
-| `page_end`    | INT         | Ending page number                                               |
-| `chunk_index` | INT         | Sequential chunk position within a document                      |
-| `embedding`   | VECTOR(384) | Nullable 384-dimensional embedding                               |
-| `created_at`  | TIMESTAMPTZ | Creation timestamp                                               |
+The `documents` table stores document-level metadata.
 
-**Chunking configuration:**
+Important fields:
 
-- Target chunk size: 220 tokens.
-- Maximum chunk size: 256 tokens.
-- Overlap: 12% of the target size.
-- Page metadata is preserved for citation generation.
+- `id`: Document UUID.
+- `title`: Document title.
+- `file_path`: Stored file reference.
+- `status`: Processing state.
+- `error_message`: Processing failure details.
+- `created_at`: Creation timestamp.
+- `user_id`: Owning user's UUID.
 
-The embedding dimension corresponds to the `all-MiniLM-L6-v2` model.
+### Chunks
 
-### 2.2 Document Processing Lifecycle
+The `chunks` table stores extracted document passages.
 
-The current implementation uses three document statuses:
+Important fields:
 
-| Status       | Description                                                                 |
-| ------------ | --------------------------------------------------------------------------- |
-| `processing` | Document ingestion is in progress                                           |
-| `ready`      | Text extraction, chunking, and embedding persistence completed successfully |
-| `failed`     | Available status for processing failures                                    |
+- `id`: Chunk UUID.
+- `document_id`: Parent document reference.
+- `content`: Extracted chunk text.
+- `page_start` and `page_end`: Source page information.
+- `chunk_index`: Position within the document.
+- `embedding`: 384-dimensional vector.
+- `created_at`: Creation timestamp.
 
-A document is marked `ready` only after its chunks and embeddings have been persisted successfully.
+### Vector index
 
-**Persistence guarantees:**
+An HNSW index using `vector_cosine_ops` supports cosine-distance-based similarity search.
 
-- Document insertion, chunk insertion, embedding updates, and the final status update execute within a database transaction.
-- A failed transaction is rolled back to prevent partial database records.
-- The API validates embedding dimensions and numerical values before persistence.
-- The current rollback strategy does not retain a failed document record; persistent failure tracking is a future improvement.
+The `match_chunks` database function:
 
-### 2.3 Vector Storage and Indexing
+- Accepts the query embedding and requested result count.
+- Supports filtering by selected document IDs.
+- Excludes chunks without embeddings.
+- Filters results by the requesting user's document ownership.
+- Orders results by vector similarity.
 
-Paplet uses pgvector to store embeddings as `VECTOR(384)`.
+## 5. Question Answering Pipeline
 
-For semantic retrieval, the planned indexing strategy uses an HNSW (Hierarchical Navigable Small World) index with cosine distance.
+The question-answering pipeline retrieves relevant passages and uses them as evidence for answer generation.
 
-```sql
-CREATE EXTENSION IF NOT EXISTS vector;
+1. **Authentication:** The API validates the user's Supabase access token.
+2. **Query validation:** The incoming request is validated.
+3. **Embedding:** The question is converted into a vector using the same embedding model.
+4. **Retrieval:** Relevant chunks are retrieved from PostgreSQL using vector similarity.
+5. **Evidence filtering:** Retrieval results are checked against the configured similarity threshold.
+6. **Generation:** Retrieved context and the question are passed to the Groq model.
+7. **Output validation:** The generated response is checked against the shared Zod schema.
+8. **Citation validation:** Citation IDs and quoted text are checked against retrieved chunks.
+9. **Response:** A validated answer or an insufficient-evidence response is returned.
 
-CREATE INDEX chunks_embedding_hnsw_idx
-ON chunks
-USING hnsw (embedding vector_cosine_ops);
-```
+### Retrieval parameters
 
-This index is planned for the retrieval stage and should be applied through a database migration before being considered implemented.
+| Parameter                    |             Value |
+| ---------------------------- | ----------------: |
+| `/ask` retrieval top-K       |                12 |
+| `/search` default top-K      |                 5 |
+| `/search` maximum top-K      |                20 |
+| Minimum retrieval similarity |              0.15 |
+| Similarity metric            | Cosine similarity |
 
-## 3. Security & Reliability Considerations
+The `/ask` and `/search` endpoints have different retrieval defaults. The configured similarity threshold is a retrieval heuristic, not a calibrated confidence score.
 
-### 3.1 PDF Validation and Extraction
+## 6. Answer Generation and Validation
 
-**Risk:** Malformed PDFs, unusual layouts, or unsupported content can produce incomplete or corrupted text.
+The Groq API generates answers using the retrieved passages as context.
 
-**Mitigation:**
+The generation layer is configured to:
 
-- Validate PDF signatures and MIME types.
-- Enforce upload size limits.
-- Reject PDFs without extractable text.
-- Preserve page metadata during extraction.
+- Use structured JSON output.
+- Apply temperature `0`.
+- Use low reasoning effort.
+- Limit completion tokens to `2048`.
+- Ground answers in supplied document context.
+- Avoid treating retrieved document content as trusted instructions.
+- Refuse when sufficient supporting evidence is unavailable.
 
-### 3.2 Prompt Injection
+The response is validated before being returned.
 
-**Risk:** Uploaded documents may contain malicious instructions intended to manipulate the LLM.
+Citation validation checks:
 
-**Mitigation:**
+- Whether each citation references a retrieved chunk.
+- Whether the quoted text matches normalized content from that chunk.
 
-- Treat retrieved document content as untrusted input.
-- Separate system instructions from retrieved context.
-- Never allow document content to override system-level instructions.
+This verifies citation traceability, but does not independently establish the scientific correctness of an answer.
 
-### 3.3 Citation Integrity
+## 7. Authentication and Data Isolation
 
-**Risk:** The LLM may generate unsupported page references, source identifiers, or quotations.
+Supabase Auth manages user authentication.
 
-**Mitigation:**
+The frontend maintains the user's Supabase session and includes the access token in protected API requests.
 
-- Associate retrieved chunks with their source document and page metadata.
-- Validate citation references against the retrieved context.
-- Avoid presenting unsupported citations as verified sources.
+The backend:
 
-### 3.4 Embedding Integrity
+1. Extracts the bearer token.
+2. Validates it using Supabase Auth.
+3. Associates the authenticated user ID with the request.
+4. Passes the user ID into document and retrieval operations.
 
-**Risk:** Failed embedding generation or incomplete persistence can leave chunks without valid vectors.
+Data isolation is enforced through ownership checks:
 
-**Mitigation:**
+- Document queries filter by `user_id`.
+- New documents are associated with the authenticated user.
+- Retrieval filters through document ownership.
+- The `match_chunks` function accepts the requesting user's ID.
 
-- Validate vector dimensions and numerical values before database insertion.
-- Use transactions for consistent document and chunk persistence.
-- Verify the expected number of updated embeddings.
-- Exclude NULL embeddings from vector retrieval.
+These checks are implemented at the application and database-query level. This design should not be interpreted as proof that PostgreSQL Row Level Security (RLS) policies are enabled.
+
+## 8. Reliability and Security Controls
+
+| Area                | Control                                         |
+| ------------------- | ----------------------------------------------- |
+| Request validation  | Zod schemas                                     |
+| Authentication      | Supabase access-token validation                |
+| Authorization       | User ownership filtering                        |
+| HTTP security       | Helmet                                          |
+| Cross-origin access | Configured CORS                                 |
+| Request protection  | Global and endpoint-specific rate limits        |
+| Request size        | JSON body limit of 32 KB                        |
+| File upload         | PDF signature and size validation               |
+| Citation integrity  | Retrieved-chunk and quote validation            |
+| Error handling      | Centralized API error middleware                |
+| Logging             | Pino-based request logging                      |
+| Shutdown            | Graceful HTTP server and database-pool shutdown |
+
+## 9. Known Design Limitations
+
+- Retrieval quality depends on document content, chunk boundaries and question phrasing.
+- Similarity scores are not calibrated answer-confidence probabilities.
+- Citation validation checks source traceability, not factual or scientific correctness.
+- Scanned image-only PDFs requiring OCR are outside the current extraction pipeline.
+- The current evaluation dataset is manually labelled and limited in size.
+- Database ownership checks are implemented without claiming database-level RLS enforcement.

@@ -1,30 +1,69 @@
-# 00-Brief: Project Paplet
+# Paplet
 
-## Problem Statement
+Paplet is a research-paper assistant that uses Retrieval-Augmented Generation (RAG) to answer questions from uploaded PDF documents with supporting citations.
 
-Reading multiple research papers to compare methods, find evidence, or extract insights is slow, and generic chat assistants that return answers without verifiable citations cannot be trusted.
+## Problem
 
-## Target User
+Extracting specific information from research papers is time-consuming. General-purpose language models can also produce answers without reliable evidence from the source documents.
 
-A student or researcher working with 3 to 20 PDFs on a specific research topic.
+Paplet addresses this by retrieving relevant passages from uploaded papers and grounding generated answers in that retrieved context.
 
-## Goals (MVP)
+## Core capabilities
 
-- Upload PDFs and display them with processing statuses.
-- Ask questions and receive answers with precise citations (e.g., Paper Title, p. 7).
-- Gracefully refuse to answer when retrieved context lacks supporting evidence.
-- Measure system quality quantitatively with a golden evaluation set.
+- Upload and process research-paper PDFs.
+- Extract text while preserving page metadata.
+- Split documents into overlapping text chunks.
+- Generate vector embeddings and store them in PostgreSQL using pgvector.
+- Retrieve relevant passages through semantic similarity search.
+- Generate answers using an external LLM.
+- Validate citations against retrieved passages.
+- Refuse answers when sufficient supporting evidence is unavailable.
+- Authenticate users and restrict document retrieval to the document owner.
 
-## Non-Goals (Scope Protections)
+## Target users
 
-- No user account creation, authentication, or billing workflows in the MVP.
-- No OCR processing for scanned image-only PDFs in the MVP.
-- No claim that the model autonomously proves research gaps; gap analysis consists of hypotheses backed by retrieved text.
-- Not a production SaaS; framed as a constrained free-tier engineering demo.
+Students and researchers who need to search and ask questions across collections of research papers.
 
-## Success Metrics
+## System scope
 
-- Retrieval Hit Rate @ k=5: > 80%
-- Citation Validity: 100% (every cited page actually contains supporting text)
-- Refusal Accuracy: 100% correct declines on unanswerable test queries
-- Latency & Cost: p95 latency under 5s, baseline token cost tracked per query
+Paplet focuses on document-grounded question answering.
+
+It does not claim to independently verify scientific conclusions, establish research novelty, or prove research gaps. Generated answers are limited to the evidence available in retrieved document passages.
+
+## Non-goals
+
+- OCR for scanned image-only PDFs.
+- Training or fine-tuning a foundation model.
+- Autonomous scientific discovery.
+- Guaranteed factual correctness of generated answers.
+- Enterprise-scale multi-tenant infrastructure.
+
+## Technology stack
+
+| Layer          | Technology                   |
+| -------------- | ---------------------------- |
+| Frontend       | React, TypeScript, Mantine   |
+| API            | Node.js, Express, TypeScript |
+| Authentication | Supabase Auth                |
+| Database       | Supabase PostgreSQL          |
+| Vector search  | pgvector                     |
+| Embeddings     | Xenova/all-MiniLM-L6-v2      |
+| LLM inference  | Groq API                     |
+| Validation     | Zod                          |
+| Deployment     | Render                       |
+
+## Engineering priorities
+
+1. Ground answers in retrieved document evidence.
+2. Preserve source metadata for traceable citations.
+3. Prevent users from accessing other users' documents.
+4. Validate generated output before returning it.
+5. Measure retrieval and answer reliability rather than relying only on demonstrations.
+
+## Current limitations
+
+- Retrieval quality varies with question phrasing and document content.
+- Similarity scores are retrieval signals, not calibrated confidence values.
+- Citation validation verifies textual support, not scientific correctness.
+- Scanned PDFs are not supported by the current extraction pipeline.
+- Evaluation coverage is limited by the manually labelled dataset and available LLM API quota.
